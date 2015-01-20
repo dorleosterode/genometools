@@ -2060,6 +2060,95 @@ static inline void gt_strgraph_traverse_from_vertex(GtStrgraph *strgraph,
   }
 }
 
+#include "core/queue_api.h"
+
+struct GtStrgraphTraverseNode {
+  GtWord dist;
+  GtStrgraphVnum self;
+  struct GtStrgraphTraverseNode *parent;
+  GtStrgraphVEdgenum from;
+};
+
+bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
+                                  GtStrgraphVnum i,
+                                  GtStrgraphVnum j,
+                                  GtWord max_dist,
+                                  GT_UNUSED GtStr *out_string) {
+  GtQueue *to_visit, *done;
+  GtStrgraphVnum dest;
+  GtStrgraphVEdgenum k;
+  struct GtStrgraphTraverseNode *root_node, *node, *p_node, *end_node;
+  bool found = false;
+  GtUword num_created = 0;
+
+  root_node = gt_malloc(sizeof (*root_node));
+  /* create node for the start vertex */
+  root_node->dist = 0;
+  root_node->self = i;
+  root_node->parent = NULL;
+  root_node->from = GT_STRGRAPH_V_EDGENUM_MAX;
+
+  /* create bfs-queue and push root_node */
+  to_visit = gt_queue_new();
+  gt_queue_add(to_visit, root_node);
+  done = gt_queue_new();
+
+  /*TODO: clean up the queue and all created nodes before returning */
+  while (gt_queue_size(to_visit) > 0) {
+    /* stop the search if to many nodes have to be visited */
+    if (num_created > 10000)
+      return false;
+
+    p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
+    /* mark p_node as visited */
+    GT_STRGRAPH_V_SET_MARK(strgraph, p_node, GT_STRGRAPH_V_ELIMINATED);
+    /* check if p_node is the goal */
+    if (p_node->self == j) {
+      /* found path between i and j */
+      if (found)
+	return false;
+      else {
+	found = true;
+	end_node = p_node;
+      }
+    }
+    /* check if max_distance is reached */
+    if (p_node->dist > max_dist)
+      continue;
+    else {
+      /* iterate over all children and add them to the queue */
+      for (k = 0; k < GT_STRGRAPH_V_NOFEDGES(strgraph, p_node->self); k++) {
+	if (GT_STRGRAPH_EDGE_IS_REDUCED(strgraph, p_node->self, k))
+	  continue;
+	dest = GT_STRGRAPH_EDGE_DEST(strgraph, p_node->self, k);
+	if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED)
+	  continue;
+	node = gt_malloc(sizeof (*node));
+
+	node->self = dest;
+	node->dist = p_node->dist
+	  + GT_STRGRAPH_EDGE_LEN(strgraph, p_node->self, dest);
+	node->parent = p_node;
+	node->from = k;
+
+	num_created += 1;
+
+	gt_queue_add(to_visit, node);
+      }
+      /* store all traversed nodes in a datastructure */
+      gt_queue_add(done, p_node);
+    }
+  }
+  /* found no path*/
+  if (end_node == NULL)
+    return false;
+  else {
+    /* construct sequence from edges and nodes */
+    
+  }
+  return true;
+}
+
 #ifdef GG_DEBUG
 static void gt_strgraph_count_junctions(GtStrgraph *strgraph)
 {

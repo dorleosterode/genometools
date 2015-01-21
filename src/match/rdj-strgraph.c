@@ -2069,6 +2069,15 @@ struct GtStrgraphTraverseNode {
   GtStrgraphVEdgenum from;
 };
 
+static inline void gt_strgraph_traverse_node_cleanup(GtQueue *q) {
+  struct GtStrgraphTraverseNode *del;
+
+  while (gt_queue_size(q) != 0) {
+    del = (struct GtStrgraphTraverseNode *) gt_queue_get(q);
+    gt_free(del);
+  }
+}
+
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtStrgraphVnum i,
                                   GtStrgraphVnum j,
@@ -2096,8 +2105,14 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   /*TODO: clean up the queue and all created nodes before returning */
   while (gt_queue_size(to_visit) > 0) {
     /* stop the search if to many nodes have to be visited */
-    if (num_created > 10000)
+    if (num_created > 10000) {
+      gt_strgraph_traverse_node_cleanup(to_visit);
+      gt_strgraph_traverse_node_cleanup(done);
+      gt_queue_delete(to_visit);
+      gt_queue_delete(done);
+
       return false;
+    }
 
     p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
     /* mark p_node as visited */
@@ -2105,8 +2120,14 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     /* check if p_node is the goal */
     if (p_node->self == j) {
       /* found path between i and j */
-      if (found)
+      if (found) {
+	gt_strgraph_traverse_node_cleanup(to_visit);
+	gt_strgraph_traverse_node_cleanup(done);
+	gt_queue_delete(to_visit);
+	gt_queue_delete(done);
+
 	return false;
+      }
       else {
 	found = true;
 	end_node = p_node;
@@ -2140,12 +2161,23 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     }
   }
   /* found no path*/
-  if (end_node == NULL)
+  if (end_node == NULL) {
+    gt_strgraph_traverse_node_cleanup(to_visit);
+    gt_strgraph_traverse_node_cleanup(done);
+    gt_queue_delete(to_visit);
+    gt_queue_delete(done);
+
     return false;
+  }
   else {
     /* construct sequence from edges and nodes */
     
   }
+  gt_strgraph_traverse_node_cleanup(to_visit);
+  gt_strgraph_traverse_node_cleanup(done);
+  gt_queue_delete(to_visit);
+  gt_queue_delete(done);
+
   return true;
 }
 

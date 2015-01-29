@@ -84,6 +84,7 @@ typedef uint64_t GtStrgraphVnum;
     GT_UNUSED int nofreadbytes;\
     nofreadbytes = gt_file_xread((FP), (void*)(SPACE), (sizeof (*(SPACE))) *\
         (NOFELEMS));\
+    printf("nof: %d, rest: %d\n", nofreadbytes, (int)(sizeof (*(SPACE)) * (NOFELEMS))); \
     gt_assert(nofreadbytes == (int)(sizeof (*(SPACE)) * (NOFELEMS)));\
   }
 
@@ -2712,7 +2713,8 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtStrgraphVnum i,
                                   GtStrgraphVnum j,
                                   GtWord max_dist,
-                                  GT_UNUSED GtStr *out_string) {
+				  bool start_dir_sense,
+                                  GtStr *out_string) {
   GtQueue *to_visit, *done;
   GtStrgraphVnum dest;
   GtStrgraphVEdgenum k;
@@ -2724,7 +2726,11 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   root_node = gt_malloc(sizeof (*root_node));
   /* create node for the start vertex */
   root_node->dist = 0;
-  root_node->self = i;
+  if (start_dir_sense)
+    root_node->self = GT_STRGRAPH_V_E(i);
+  else
+    root_node->self = GT_STRGRAPH_V_B(i);
+
   root_node->parent = NULL;
   root_node->from = GT_STRGRAPH_V_EDGENUM_MAX;
 
@@ -2733,10 +2739,13 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   gt_queue_add(to_visit, root_node);
   done = gt_queue_new();
 
-  /*TODO: how to consider direction of edges? */
+  /*TODO: how to consider direction of edges? Giorgio: not needed
+    because unidirectional graph */
+  printf("starting BFS\n");
   while (gt_queue_size(to_visit) > 0) {
     /* stop the search if to many nodes have to be visited */
     if (num_created > 10000) {
+      printf("aborted: num_created: %lu\n", num_created);
       gt_strgraph_traverse_node_cleanup(to_visit);
       gt_strgraph_traverse_node_cleanup(done);
       gt_queue_delete(to_visit);
@@ -2747,11 +2756,15 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 
     p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
     /* mark p_node as visited */
-    GT_STRGRAPH_V_SET_MARK(strgraph, p_node, GT_STRGRAPH_V_ELIMINATED);
+    printf("before set mark\n");
+    GT_STRGRAPH_V_SET_MARK(strgraph, p_node->self, GT_STRGRAPH_V_ELIMINATED);
+    printf("marked node\n");
     /* check if p_node is the goal */
     if (p_node->self == j) {
+      printf("found goal node\n");
       /* found path between i and j */
       if (found) {
+	printf("found more than one path\n");
 	gt_strgraph_traverse_node_cleanup(to_visit);
 	gt_strgraph_traverse_node_cleanup(done);
 	gt_queue_delete(to_visit);
@@ -2760,21 +2773,35 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 	return false;
       }
       else {
+	printf("found one path\n");
 	found = true;
 	end_node = p_node;
       }
     }
     /* check if max_distance is reached */
-    if (p_node->dist > max_dist)
+    printf("p_node->dist: %lu, max_dist: %ld\n", p_node->dist, max_dist);
+    if (p_node->dist > max_dist) {
+      printf("to much distance\n");
       continue;
+    }
     else {
+      printf("continue search with children\n");
       /* iterate over all children and add them to the queue */
       for (k = 0; k < GT_STRGRAPH_V_NOFEDGES(strgraph, p_node->self); k++) {
+	printf("visit next child: %lu\n", k);
 	if (GT_STRGRAPH_EDGE_IS_REDUCED(strgraph, p_node->self, k))
 	  continue;
-	dest = GT_STRGRAPH_EDGE_DEST(strgraph, p_node->self, k);
-	if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED)
+	/* GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph), */
+	/* 				   w->to); */
+	dest = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
+					   GT_STRGRAPH_EDGE_DEST(strgraph, p_node->self, k));
+	printf("got destination: %lu of node: %lu for child %lu\n", dest, p_node->self, k);
+	if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED) {
+	  printf("dest was marked\n");
 	  continue;
+	}
+
+	printf("create new node\n");
 	node = gt_malloc(sizeof (*node));
 
 	node->self = dest;
@@ -2785,14 +2812,17 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 
 	num_created += 1;
 
+	printf("push to the queue\n");
 	gt_queue_add(to_visit, node);
       }
       /* store all traversed nodes in a datastructure */
       gt_queue_add(done, p_node);
     }
   }
+  printf("end_node after BFS: %p\n", end_node);
   /* found no path*/
   if (end_node == NULL) {
+    printf("clean up and exiting, cause of no found path: %d\n", true);
     gt_strgraph_traverse_node_cleanup(to_visit);
     gt_strgraph_traverse_node_cleanup(done);
     gt_queue_delete(to_visit);
@@ -2801,10 +2831,11 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     return false;
   }
   else {
+    printf("construction of sequence\n");
     /* construct sequence from edges and nodes */
     GtUword pos, nof_chars, seqnum, l, m;
     struct GtStrgraphTraverseWalk *w;
-    GtArraychar *seq = NULL;
+    GtArraychar seq;
     GtUword inc = 4096;
     GtArray *walk = gt_array_new(sizeof (*w));
 
@@ -2828,10 +2859,10 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 					 end_node->self);
     pos = gt_encseq_seqstartpos(contigs, seqnum);
     nof_chars = gt_encseq_seqlength(contigs, seqnum);
-    GT_INITARRAY(seq, char);
+    GT_INITARRAY(&seq, char);
     for (l = 0; l < nof_chars; l++, pos++) {
       char *c;
-      GT_GETNEXTFREEINARRAY(c, seq, char, inc);
+      GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
       *c = gt_encseq_get_decoded_char(contigs, pos,
 				      GT_READMODE_FORWARD);
     }
@@ -2845,13 +2876,14 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 	gt_encseq_seqlength(contigs, seqnum) - nof_chars;
       for (l = 0; l < nof_chars; l++, pos++) {
 	char *c;
-	GT_GETNEXTFREEINARRAY(c, seq, char, inc);
+	GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
 	*c = gt_encseq_get_decoded_char(contigs, pos,
 					GT_READMODE_FORWARD);
       }
     }
 
-    /* TODO: converte the gt-array-char into cstr or set out_string to seq */
+    /* set out_string to seq */
+    gt_str_set(out_string, seq.spacechar);
 
   }
   gt_strgraph_traverse_node_cleanup(to_visit);
@@ -2859,5 +2891,5 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   gt_queue_delete(to_visit);
   gt_queue_delete(done);
 
-  return true;
+  return found;
 }

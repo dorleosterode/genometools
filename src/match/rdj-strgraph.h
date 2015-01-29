@@ -22,6 +22,7 @@
 #include "core/encseq_api.h"
 #include "core/logger_api.h"
 #include "core/error_api.h"
+#include "core/intbits.h"
 
 typedef struct GtStrgraph GtStrgraph;
 
@@ -154,6 +155,16 @@ void gt_strgraph_spell(GtStrgraph *strgraph, GtUword min_path_depth,
 /* --- delete --- */
 
 void gt_strgraph_delete(GtStrgraph *strgraph);
+
+/* --- dorles new function --- */
+
+bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
+                                  GtEncseq *contigs,
+                                  GtUword i,
+                                  GtUword j,
+                                  GtWord max_dist,
+				  bool start_dir_sense,
+                                  GtStr *out_string);
 
 /* --- unit test --- */
 

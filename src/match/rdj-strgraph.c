@@ -2811,30 +2811,20 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   while (gt_queue_size(to_visit) > 0) {
     /* stop the search if to many nodes have to be visited */
     if (num_created > 10000) {
-      gt_free(p_node);
-      gt_strgraph_traverse_node_cleanup(to_visit);
-      gt_strgraph_traverse_node_cleanup(done);
-      gt_queue_delete(to_visit);
-      gt_queue_delete(done);
-
-      return false;
+      break;
     }
 
     p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
     /* mark p_node as visited */
-     GT_STRGRAPH_V_SET_MARK(strgraph, p_node->self, GT_STRGRAPH_V_ELIMINATED);
-     /* check if p_node is the goal */
+    GT_STRGRAPH_V_SET_MARK(strgraph, p_node->self, GT_STRGRAPH_V_ELIMINATED);
+    /* check if p_node is the goal */
     if (p_node->self == j) {
        /* found path between i and j */
       if (found) {
         /* found more than one path */
-        gt_free(p_node);
-        gt_strgraph_traverse_node_cleanup(to_visit);
-        gt_strgraph_traverse_node_cleanup(done);
-        gt_queue_delete(to_visit);
-        gt_queue_delete(done);
-
-        return false;
+	found = false;
+	gt_queue_add(done, p_node);
+	break;
       }
       else {
         found = true;
@@ -2842,8 +2832,10 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
       }
     }
     /* check if max_distance is reached */
-    if (p_node->dist > max_dist)
+    if (p_node->dist > max_dist) {
+      gt_queue_add(done, p_node);
       continue;
+    }
     else {
       /* iterate over all children and add them to the queue */
       for (k = 0; k < GT_STRGRAPH_V_NOFEDGES(strgraph, p_node->self); k++) {
@@ -2872,9 +2864,10 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   }
 
   /* found exactly one path*/
-  if (end_node != NULL) {
+  if (found) {
     gt_strgraph_construct_seq_from_path(strgraph, end_node, contigs, out_string);
   }
+
   gt_strgraph_traverse_node_cleanup(to_visit);
   gt_strgraph_traverse_node_cleanup(done);
   gt_queue_delete(to_visit);

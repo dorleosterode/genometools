@@ -2709,6 +2709,71 @@ struct GtStrgraphTraverseWalk {
   GtStrgraphVnum to;
 };
 
+void gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
+					 struct GtStrgraphTraverseNode *end_node,
+					 GtEncseq *contigs,
+					 GtStr *out_string) {
+  /* construct sequence from edges and nodes */
+  GtUword pos, nof_chars, seqnum, l, m;
+  struct GtStrgraphTraverseNode *p_node;
+  struct GtStrgraphTraverseWalk *w;
+  GtArraychar seq;
+  GtUword inc = 4096;
+  GtArray *walk = gt_array_new(sizeof (w));
+
+  while (end_node->parent != NULL) {
+    p_node = end_node->parent;
+    w = gt_malloc(sizeof (*w));
+    w->from = p_node->self;
+    w->edge = end_node->from;
+    w->to = end_node->self;
+    gt_array_add(walk, w);
+    end_node = p_node;
+  }
+
+  /* construct sequence for walk here */
+  /* spell the first vertex completely */
+  seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
+				       end_node->self);
+
+  pos = gt_encseq_seqstartpos(contigs, seqnum);
+  nof_chars = gt_encseq_seqlength(contigs, seqnum);
+  GT_INITARRAY(&seq, char);
+  for (l = 0; l < nof_chars; l++, pos++) {
+    char *c;
+    GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
+    *c = gt_encseq_get_decoded_char(contigs, pos,
+				    GT_READMODE_FORWARD);
+  }
+  for (m = 0; m < gt_array_size(walk); m++) {
+    /* add sequences for all edges in walk */
+    w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk, m);
+    seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
+                                           w->to);
+    nof_chars = GT_STRGRAPH_EDGE_LEN(strgraph, w->from, w->edge);
+    pos = gt_encseq_seqstartpos(contigs, seqnum) +
+      gt_encseq_seqlength(contigs, seqnum) - nof_chars;
+    for (l = 0; l < nof_chars; l++, pos++) {
+      char *c;
+      GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
+      *c = gt_encseq_get_decoded_char(contigs, pos,
+				      GT_READMODE_FORWARD);
+    }
+  }
+
+  /* TODO: set out_string to seq, maybe we need to copy the string from spacechar */
+  gt_str_set(out_string, seq.spacechar);
+
+  /* clean up seq and walk */
+  GT_FREEARRAY(&seq, char);
+  for (m = 0; m < gt_array_size(walk); m++) {
+    w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk, m);
+    gt_free(w);
+  }
+  gt_array_delete(walk);
+
+}
+
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtEncseq *contigs,
                                   GtStrgraphVnum i,
@@ -2806,66 +2871,9 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     gt_queue_add(done, p_node);
   }
 
-  /* found no path*/
-  if (end_node == NULL) {
-    gt_strgraph_traverse_node_cleanup(to_visit);
-    gt_strgraph_traverse_node_cleanup(done);
-    gt_queue_delete(to_visit);
-    gt_queue_delete(done);
-
-    return false;
-  }
-  else {
-    /* construct sequence from edges and nodes */
-    GtUword pos, nof_chars, seqnum, l, m;
-    struct GtStrgraphTraverseWalk *w;
-    GtArraychar seq;
-    GtUword inc = 4096;
-    GtArray *walk = gt_array_new(sizeof (w));
-
-    while (end_node->parent != NULL) {
-      p_node = end_node->parent;
-      w = gt_malloc(sizeof (*w));
-      w->from = p_node->self;
-      w->edge = end_node->from;
-      w->to = end_node->self;
-      gt_array_add(walk, w);
-      end_node = p_node;
-    }
-
-    /* construct sequence for walk here */
-    /* spell the first vertex completely */
-    seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-                                         end_node->self);
-
-    pos = gt_encseq_seqstartpos(contigs, seqnum);
-    nof_chars = gt_encseq_seqlength(contigs, seqnum);
-    GT_INITARRAY(&seq, char);
-    for (l = 0; l < nof_chars; l++, pos++) {
-      char *c;
-      GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
-      *c = gt_encseq_get_decoded_char(contigs, pos,
-                                      GT_READMODE_FORWARD);
-    }
-    for (m = 0; m < gt_array_size(walk); m++) {
-      /* add sequences for all edges in walk */
-      w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk, m);
-      seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-                                           w->to);
-      nof_chars = GT_STRGRAPH_EDGE_LEN(strgraph, w->from, w->edge);
-      pos = gt_encseq_seqstartpos(contigs, seqnum) +
-        gt_encseq_seqlength(contigs, seqnum) - nof_chars;
-      for (l = 0; l < nof_chars; l++, pos++) {
-        char *c;
-        GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
-        *c = gt_encseq_get_decoded_char(contigs, pos,
-                                        GT_READMODE_FORWARD);
-      }
-    }
-
-    /* TODO: set out_string to seq, maybe we need to copy the string from spacechar */
-    gt_str_set(out_string, seq.spacechar);
-
+  /* found exactly one path*/
+  if (end_node != NULL) {
+    gt_strgraph_construct_seq_from_path(strgraph, end_node, contigs, out_string);
   }
   gt_strgraph_traverse_node_cleanup(to_visit);
   gt_strgraph_traverse_node_cleanup(done);

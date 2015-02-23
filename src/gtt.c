@@ -137,6 +137,7 @@
 #include "tools/gt_prebwt.h"
 #include "tools/gt_readjoiner.h"
 #include "tools/gt_repfind.h"
+#include "tools/gt_scaffolder.h"
 #include "tools/gt_script_filter.h"
 #include "tools/gt_select.h"
 #include "tools/gt_seq.h"
@@ -233,6 +234,7 @@ GtToolbox* gtt_tools(void)
   gt_toolbox_add_tool(tools, "prebwt", gt_prebwt());
   gt_toolbox_add_tool(tools, "readjoiner", gt_readjoiner());
   gt_toolbox_add_tool(tools, "repfind", gt_repfind());
+  gt_toolbox_add_tool(tools, "scaffolder", gt_scaffolder());
   gt_toolbox_add_tool(tools, "scriptfilter", gt_script_filter());
   gt_toolbox_add_tool(tools, "select", gt_select());
   gt_toolbox_add_tool(tools, "seq", gt_seq());

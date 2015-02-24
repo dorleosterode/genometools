@@ -72,6 +72,7 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   GtScaffolderArguments *arguments = tool_arguments;
   GtOptionParser *op;
   GtOption *option;
+  GtOption *dist;
   gt_assert(arguments);
 
   /* init */
@@ -116,12 +117,13 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   /* - contigs file */
   option = gt_option_new_string("contigs", "contigs in FASTA format",
                             arguments->contigs, NULL);
+  gt_option_is_mandatory(option);
   gt_option_parser_add_option(op, option);
 
   /* - distance file */
-  option = gt_option_new_string("dist", "distanceinformation in ABySS .de format",
-                            arguments->dist, NULL);
-  gt_option_parser_add_option(op, option);
+  dist = gt_option_new_string("dist", "distanceinformation in ABySS .de format",
+			      arguments->dist, NULL);
+  gt_option_parser_add_option(op, dist);
 
   /* - astat file */
   option = gt_option_new_string("astat", "astatistic file in SGAs .astat format",
@@ -168,6 +170,7 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   /* - bam file */
   option = gt_option_new_string("bam", "bam file containing alignments of paired reads to the contigs",
                                 arguments->bam, NULL);
+  gt_option_is_mandatory_either(dist, option);
   gt_option_parser_add_option(op, option);
 
   return op;

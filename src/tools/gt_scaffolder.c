@@ -251,14 +251,14 @@ static int gt_scaffolder_runner(GT_UNUSED int argc, GT_UNUSED const char **argv,
   }
 
   if (had_err == 0) {
-    if (!astat_is_annotated) {
-      /* load astatistics and copy number from file */
-      had_err = gt_scaffolder_graph_mark_repeats(gt_str_get(arguments->astat),
+    /* load A-statistics and copy number if filename of A-statistics file
+       is provided */
+    /* mark vertices as repeats if astat-/copynumber cutoff is exceeded */
+    had_err = gt_scaffolder_graph_mark_repeats(gt_str_get(arguments->astat),
                                                  graph,
                                                  arguments->rep_cp_cutoff,
                                                  arguments->rep_astat_cutoff,
                                                  err);
-    }
   }
   if (had_err == 0) {
     /* mark polymorphic vertices, edges and inconsistent edges */

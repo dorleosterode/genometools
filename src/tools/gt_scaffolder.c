@@ -41,7 +41,6 @@ typedef struct {
   /* options for bamparser */
   GtUword bam_min_qual;
   GtUword bam_min_nof_pairs;
-  GtUword bam_min_ref_length;
   GtWord bam_min_dist;
   GtWord bam_max_dist;
   GtUword bam_min_align;
@@ -99,7 +98,7 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   gt_option_parser_add_option(op, option);
 
   /* - astat cutoff */
-  option = gt_option_new_double("rep_astat_cutoff", "minimal astatistic for not repetitiv contigs",
+  option = gt_option_new_double("rep_astat_cutoff", "minimal A-statistics for not repetitiv contigs",
                                &arguments->rep_astat_cutoff, 20.0);
   gt_option_parser_add_option(op, option);
 
@@ -132,7 +131,7 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   gt_option_parser_add_option(op, dist);
 
   /* - astat file */
-  option = gt_option_new_string("astat", "astatistic file in SGAs .astat format",
+  option = gt_option_new_string("astat", "A-statistics file in SGAs .astat format",
                             arguments->astat, NULL);
   gt_option_parser_add_option(op, option);
 
@@ -153,10 +152,6 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
                                &arguments->bam_min_nof_pairs, 10);
   gt_option_parser_add_option(op, option);
 
-  /* - bam min ref length */
-  option = gt_option_new_uword("bam_min_ref_length", "minimal reference length",
-                               &arguments->bam_min_qual, 200);
-  gt_option_parser_add_option(op, option);
 
   /* - bam min dist */
   option = gt_option_new_word("bam_min_dist", "minimal distance of contigs",
@@ -227,7 +222,7 @@ static int gt_scaffolder_runner(GT_UNUSED int argc, GT_UNUSED const char **argv,
                                         arguments->bam_max_dist,
                                         arguments->bam_min_qual,
                                         arguments->bam_min_nof_pairs,
-                                        arguments->bam_min_ref_length,
+                                        arguments->min_contig_len,
                                         arguments->bam_min_align,
                                         err);
     if (had_err == 0) {

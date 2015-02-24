@@ -199,7 +199,7 @@ static int gt_scaffolder_runner(GT_UNUSED int argc, GT_UNUSED const char **argv,
                                 GtError *err)
 {
   DistRecords *dist;
-  GtScaffolderGraph *graph;
+  GtScaffolderGraph *graph = NULL;
   bool astat_is_annotated = true;
   GtScaffolderArguments *arguments = tool_arguments;
   char *dist_file;

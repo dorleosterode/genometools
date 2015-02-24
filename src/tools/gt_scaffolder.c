@@ -19,6 +19,12 @@
 #include "core/unused_api.h"
 #include "tools/gt_scaffolder.h"
 
+/* include the files of gt scaffolder located in match as symbolic links */
+#include "match/gt_scaffolder_bamparser.h"
+#include "match/gt_scaffolder_parser.h"
+#include "match/gt_scaffolder_graph.h"
+#include "match/gt_scaffolder_algorithms.h"
+
 typedef struct {
   /* options for gt scaffolder */
   GtUword min_contig_len;
@@ -122,7 +128,7 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
 
   /* - distance file */
   dist = gt_option_new_string("dist", "distanceinformation in ABySS .de format",
-			      arguments->dist, NULL);
+                              arguments->dist, NULL);
   gt_option_parser_add_option(op, dist);
 
   /* - astat file */
@@ -139,32 +145,32 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
 
   /* - bam min qual */
   option = gt_option_new_uword("bam_min_qual", "minimal quality in bam file",
-			       &arguments->bam_min_qual, 10);
+                               &arguments->bam_min_qual, 10);
   gt_option_parser_add_option(op, option);
 
   /* - bam min nof pairs */
   option = gt_option_new_uword("bam_min_nof_pairs", "minimal number of pairs",
-			       &arguments->bam_min_nof_pairs, 10);
+                               &arguments->bam_min_nof_pairs, 10);
   gt_option_parser_add_option(op, option);
 
   /* - bam min ref length */
   option = gt_option_new_uword("bam_min_ref_length", "minimal reference length",
-			       &arguments->bam_min_qual, 200);
+                               &arguments->bam_min_qual, 200);
   gt_option_parser_add_option(op, option);
 
   /* - bam min dist */
   option = gt_option_new_word("bam_min_dist", "minimal distance of contigs",
-			      &arguments->bam_min_dist, -99);
+                              &arguments->bam_min_dist, -99);
   gt_option_parser_add_option(op, option);
 
   /* - bam max dist */
   option = gt_option_new_word("bam_max_dist", "maximal distance of contigs",
-			      &arguments->bam_max_dist, GT_WORD_MAX);
+                              &arguments->bam_max_dist, GT_WORD_MAX);
   gt_option_parser_add_option(op, option);
 
   /* - bam min align */
   option = gt_option_new_uword("bam_min_align", "minimal alignment length",
-			       &arguments->bam_min_align, 100);
+                               &arguments->bam_min_align, 100);
   gt_option_parser_add_option(op, option);
 
   /* - bam file */
@@ -193,18 +199,118 @@ static int gt_scaffolder_arguments_check(GT_UNUSED int rest_argc,
   return had_err;
 }
 
-static int gt_scaffolder_runner(int argc, const char **argv, int parsed_args,
-                              void *tool_arguments, GT_UNUSED GtError *err)
+static int gt_scaffolder_runner(GT_UNUSED int argc, GT_UNUSED const char **argv,
+                                GT_UNUSED int parsed_args, void *tool_arguments,
+                                GtError *err)
 {
+  DistRecords *dist;
+  GtScaffolderGraph *graph;
+  bool astat_is_annotated = true;
   GtScaffolderArguments *arguments = tool_arguments;
+  char *dist_file;
   int had_err = 0;
 
   gt_error_check(err);
   gt_assert(arguments);
 
-  /* XXX */
-  printf("argc=%d, parsed_args=%d\n", argc, parsed_args);
-  printf("argv[0]=%s\n", argv[0]);
+  /* check if distance file or bam file is given */
+  if (gt_str_length(arguments->bam) > 0) {
+    /* parse bam file and construct distance information */
+    dist_file = "gt_scaffolder_bamparser_distance_records.de";
+    /* initialize distance records */
+    dist = gt_scaffolder_bamparser_init_dist_records();
+
+    /* read paired information from bam file */
+    had_err = gt_scaffolder_bamparser_read_paired_information(dist,
+                                        gt_str_get(arguments->bam),
+                                        arguments->bam_min_dist,
+                                        arguments->bam_max_dist,
+                                        arguments->bam_min_qual,
+                                        arguments->bam_min_nof_pairs,
+                                        arguments->bam_min_ref_length,
+                                        arguments->bam_min_align,
+                                        err);
+    if (had_err == 0) {
+      /* print distance records */
+      had_err = gt_scaffolder_bamparser_print_dist_records(dist,
+                                                           dist_file, err);
+      /* delete distance records */
+      gt_scaffolder_bamparser_delete_dist_records(dist);
+    }
+  }
+
+  if (had_err == 0) {
+    if (gt_str_length(arguments->dist) > 0)
+      dist_file = gt_str_get(arguments->dist);
+
+    if (gt_str_length(arguments->astat) > 0)
+      astat_is_annotated = false;
+
+    /* create graph */
+    had_err = gt_scaffolder_graph_new_from_file(&graph,
+                                                gt_str_get(arguments->contigs),
+                                                arguments->min_contig_len,
+                                                dist_file,
+                                                astat_is_annotated,
+                                                err);
+  }
+
+  if (had_err == 0) {
+    if (!astat_is_annotated) {
+      /* load astatistics and copy number from file */
+      had_err = gt_scaffolder_graph_mark_repeats(gt_str_get(arguments->astat),
+                                                 graph,
+                                                 arguments->rep_cp_cutoff,
+                                                 arguments->rep_astat_cutoff,
+                                                 err);
+    }
+  }
+  if (had_err == 0) {
+    /* mark polymorphic vertices, edges and inconsistent edges */
+    gt_scaffolder_graph_filter(graph,
+                               arguments->p_cutoff,
+                               arguments->cp_cutoff,
+                               arguments->overlap_cutoff);
+
+    gt_scaffolder_makescaffold(graph);
+    had_err = gt_scaffolder_graph_print(graph,
+                                        "gt_scaffolder_scaffolds.dot",
+                                        err);
+  }
+
+  if (had_err == 0) {
+    GtArray *recs;
+    GtAssemblyStatsCalculator *scaf_stats =
+      gt_assembly_stats_calculator_new();
+
+    recs = gt_scaffolder_graph_iterate_scaffolds(graph, scaf_stats);
+
+    had_err = gt_scaffolder_graph_write_scaffold(recs,
+                                                 "gt_scaffolder_scaffolds.scaf",
+                                                 err);
+    if (had_err == 0) {
+      GtUword i;
+      GtScaffolderGraphRecord *rec;
+      GtLogger *logger;
+
+      /* if sequence generation is wanted, it would be done here */
+
+      for (i = 0; i < gt_array_size(recs); i++) {
+        rec = *(GtScaffolderGraphRecord **) gt_array_get(recs, i);
+        gt_scaffolder_graph_record_delete(rec);
+      }
+      gt_array_delete(recs);
+
+      logger = gt_logger_new(true, "[scaffolder] ", stderr);
+      gt_assembly_stats_calculator_nstat(scaf_stats, 50);
+      gt_assembly_stats_calculator_show(scaf_stats, logger);
+
+      gt_logger_delete(logger);
+      gt_assembly_stats_calculator_delete(scaf_stats);
+    }
+  }
+
+  gt_scaffolder_graph_delete(graph);
 
   return had_err;
 }

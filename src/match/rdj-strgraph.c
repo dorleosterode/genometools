@@ -2709,10 +2709,11 @@ struct GtStrgraphTraverseWalk {
   GtStrgraphVnum to;
 };
 
-void gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
-					 struct GtStrgraphTraverseNode *end_node,
-					 GtEncseq *contigs,
-					 GtStr *out_string) {
+void
+gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
+				    struct GtStrgraphTraverseNode *end_node,
+				    GtEncseq *contigs,
+				    GtStr *out_string) {
   /* construct sequence from edges and nodes */
   GtUword pos, nof_chars, seqnum, l, m;
   struct GtStrgraphTraverseNode *p_node;
@@ -2761,7 +2762,7 @@ void gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
     }
   }
 
-  /* TODO: set out_string to seq, maybe we need to copy the string from spacechar */
+  /* maybe we need to copy the string from spacechar */
   gt_str_set(out_string, seq.spacechar);
 
   /* clean up seq and walk */
@@ -2810,9 +2811,8 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     because unidirectional graph */
   while (gt_queue_size(to_visit) > 0) {
     /* stop the search if to many nodes have to be visited */
-    if (num_created > 10000) {
+    if (num_created > 10000)
       break;
-    }
 
     p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
     /* mark p_node as visited */
@@ -2842,10 +2842,10 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
         if (GT_STRGRAPH_EDGE_IS_REDUCED(strgraph, p_node->self, k))
           continue;
         dest = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-                                           GT_STRGRAPH_EDGE_DEST(strgraph, p_node->self, k));
-        if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED) {
-          continue;
-        }
+                                        GT_STRGRAPH_EDGE_DEST(strgraph,
+							      p_node->self, k));
+        if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED)
+	  continue;
 
         node = gt_malloc(sizeof (*node));
 
@@ -2865,7 +2865,8 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 
   /* found exactly one path*/
   if (found) {
-    gt_strgraph_construct_seq_from_path(strgraph, end_node, contigs, out_string);
+    gt_strgraph_construct_seq_from_path(strgraph,
+					end_node, contigs, out_string);
   }
 
   gt_strgraph_traverse_node_cleanup(to_visit);

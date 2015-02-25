@@ -2709,11 +2709,11 @@ struct GtStrgraphTraverseWalk {
   GtStrgraphVnum to;
 };
 
-void
+static void
 gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
-				    struct GtStrgraphTraverseNode *end_node,
-				    GtEncseq *contigs,
-				    GtStr *out_string) {
+                                    struct GtStrgraphTraverseNode *end_node,
+                                    GtEncseq *contigs,
+                                    GtStr *out_string) {
   /* construct sequence from edges and nodes */
   GtUword pos, nof_chars, seqnum, l, m;
   struct GtStrgraphTraverseNode *p_node;
@@ -2735,7 +2735,7 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
   /* construct sequence for walk here */
   /* spell the first vertex completely */
   seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-				       end_node->self);
+                                       end_node->self);
 
   pos = gt_encseq_seqstartpos(contigs, seqnum);
   nof_chars = gt_encseq_seqlength(contigs, seqnum);
@@ -2744,7 +2744,7 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
     char *c;
     GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
     *c = gt_encseq_get_decoded_char(contigs, pos,
-				    GT_READMODE_FORWARD);
+                                    GT_READMODE_FORWARD);
   }
   for (m = 0; m < gt_array_size(walk); m++) {
     /* add sequences for all edges in walk */
@@ -2758,7 +2758,7 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
       char *c;
       GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
       *c = gt_encseq_get_decoded_char(contigs, pos,
-				      GT_READMODE_FORWARD);
+                                      GT_READMODE_FORWARD);
     }
   }
 
@@ -2822,9 +2822,9 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
        /* found path between i and j */
       if (found) {
         /* found more than one path */
-	found = false;
-	gt_queue_add(done, p_node);
-	break;
+        found = false;
+        gt_queue_add(done, p_node);
+        break;
       }
       else {
         found = true;
@@ -2843,9 +2843,9 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
           continue;
         dest = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
                                         GT_STRGRAPH_EDGE_DEST(strgraph,
-							      p_node->self, k));
+                                                              p_node->self, k));
         if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED)
-	  continue;
+          continue;
 
         node = gt_malloc(sizeof (*node));
 
@@ -2866,7 +2866,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   /* found exactly one path*/
   if (found) {
     gt_strgraph_construct_seq_from_path(strgraph,
-					end_node, contigs, out_string);
+                                        end_node, contigs, out_string);
   }
 
   gt_strgraph_traverse_node_cleanup(to_visit);

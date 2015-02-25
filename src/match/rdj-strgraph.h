@@ -156,7 +156,7 @@ void gt_strgraph_spell(GtStrgraph *strgraph, GtUword min_path_depth,
 
 void gt_strgraph_delete(GtStrgraph *strgraph);
 
-/* --- dorles new function --- */
+/* --- traversal function for scaffolding --- */
 
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtEncseq *contigs,

@@ -23,7 +23,9 @@
 #include "core/logger_api.h"
 #include "core/error_api.h"
 #include "core/intbits.h"
+#include "match/rdj-strgraph.h"
 
+typedef uint64_t GtStrgraphVnum;
 typedef struct GtStrgraph GtStrgraph;
 
 /* --- preparation --- */
@@ -160,10 +162,10 @@ void gt_strgraph_delete(GtStrgraph *strgraph);
 
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtEncseq *contigs,
-                                  GtUword i,
-                                  GtUword j,
+                                  GtStrgraphVnum i,
+                                  GtStrgraphVnum j,
                                   GtWord max_dist,
-				  bool start_dir_sense,
+				                          bool start_dir_sense,
                                   GtStr *out_string);
 
 /* --- unit test --- */

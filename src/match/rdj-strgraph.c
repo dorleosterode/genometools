@@ -2748,7 +2748,8 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
   }
   for (m = 0; m < gt_array_size(walk); m++) {
     /* add sequences for all edges in walk */
-    w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk, m);
+    w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk,
+                                                   gt_array_size(walk) - m - 1);
     seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
                                            w->to);
     nof_chars = GT_STRGRAPH_EDGE_LEN(strgraph, w->from, w->edge);

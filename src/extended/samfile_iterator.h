@@ -56,6 +56,12 @@ const char*        gt_samfile_iterator_reference_name(
                                                 const GtSamfileIterator *s_iter,
                                                 int32_t reference_num);
 
+/* Returns the length of the reference sequence with number <reference_num>
+   stored in the alignment file processed by <s_iter>.*/
+GtUword gt_samfile_iterator_reference_length(
+                                            const GtSamfileIterator *s_iter,
+                                            int32_t reference_num);
+
 /* Returns the number of reference sequences stored in the alignment file
    processed by <s_iter>.*/
 int32_t            gt_samfile_iterator_number_of_references(

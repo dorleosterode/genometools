@@ -160,10 +160,10 @@ void gt_strgraph_delete(GtStrgraph *strgraph);
 
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtEncseq *contigs,
-                                  GtUword i,
-                                  GtUword j,
+                                  GtUword readnum_i,
+                                  GtUword readnum_j,
                                   GtWord max_dist,
-				  bool start_dir_sense,
+                                  bool start_dir_sense,
                                   GtStr *out_string);
 
 /* --- unit test --- */

@@ -25,6 +25,7 @@
 #include "core/intbits.h"
 #include "match/rdj-strgraph.h"
 
+typedef uint64_t GtStrgraphVnum;
 typedef struct GtStrgraph GtStrgraph;
 
 /* --- preparation --- */

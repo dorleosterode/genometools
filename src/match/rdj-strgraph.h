@@ -23,6 +23,7 @@
 #include "core/logger_api.h"
 #include "core/error_api.h"
 #include "core/intbits.h"
+#include "match/rdj-strgraph.h"
 
 typedef struct GtStrgraph GtStrgraph;
 

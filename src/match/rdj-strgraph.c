@@ -68,7 +68,6 @@
 
 /* Type For Vertex numbers */
 
-typedef uint64_t GtStrgraphVnum;
 #define FormatGtStrgraphVnum       Formatuint64_t
 #define PRINTGtStrgraphVnumcast(X) PRINTuint64_tcast(X)
 #define SCANGtStrgraphVnumcast(X)  SCANuint64_tcast(X)

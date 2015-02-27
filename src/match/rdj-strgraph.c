@@ -2777,8 +2777,8 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
 
 bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
                                   GtEncseq *contigs,
-                                  GtStrgraphVnum i,
-                                  GtStrgraphVnum j,
+                                  GtUword readnum_i,
+                                  GtUword readnum_j,
                                   GtWord max_dist,
                                   bool start_dir_sense,
                                   GtStr *out_string) {
@@ -2795,9 +2795,9 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   /* create node for the start vertex */
   root_node->dist = 0;
   if (start_dir_sense)
-    root_node->self = GT_STRGRAPH_V_E(i);
+    root_node->self = readnum_i *  2 + 1;
   else
-    root_node->self = GT_STRGRAPH_V_B(i);
+    root_node->self = readnum_i * 2;
 
   root_node->parent = NULL;
   root_node->from = GT_STRGRAPH_V_EDGENUM_MAX;
@@ -2818,7 +2818,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     /* mark p_node as visited */
     GT_STRGRAPH_V_SET_MARK(strgraph, p_node->self, GT_STRGRAPH_V_ELIMINATED);
     /* check if p_node is the goal */
-    if (p_node->self == j) {
+    if (GT_STRGRAPH_V_READNUM(p_node->self) == readnum_j) {
        /* found path between i and j */
       if (found) {
         /* found more than one path */
@@ -2841,9 +2841,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
       for (k = 0; k < GT_STRGRAPH_V_NOFEDGES(strgraph, p_node->self); k++) {
         if (GT_STRGRAPH_EDGE_IS_REDUCED(strgraph, p_node->self, k))
           continue;
-        dest = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-                                        GT_STRGRAPH_EDGE_DEST(strgraph,
-                                                              p_node->self, k));
+        dest = GT_STRGRAPH_EDGE_DEST(strgraph, p_node->self, k);
         if (GT_STRGRAPH_V_MARK(strgraph, dest) == GT_STRGRAPH_V_ELIMINATED)
           continue;
 

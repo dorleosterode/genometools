@@ -2775,13 +2775,13 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
 
 }
 
-bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
-                                  GtEncseq *contigs,
-                                  GtUword readnum_i,
-                                  GtUword readnum_j,
-                                  GtWord max_dist,
-                                  bool start_dir_sense,
-                                  GtStr *out_string) {
+GtUword gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
+                                     GtEncseq *contigs,
+                                     GtUword readnum_i,
+                                     GtUword readnum_j,
+                                     GtWord max_dist,
+                                     bool start_dir_sense,
+                                     GtStr *out_string) {
   GtQueue *to_visit, *done;
   GtStrgraphVnum dest;
   GtStrgraphVEdgenum k;
@@ -2789,6 +2789,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   struct GtStrgraphTraverseNode *p_node = NULL;
   struct GtStrgraphTraverseNode *end_node = NULL;
   bool found = false;
+  GtUword ret = 0;
   GtUword num_created = 0;
 
   root_node = gt_malloc(sizeof (*root_node));
@@ -2811,8 +2812,10 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
     because unidirectional graph */
   while (gt_queue_size(to_visit) > 0) {
     /* stop the search if to many nodes have to be visited */
-    if (num_created > 10000)
+    if (num_created > 10000) {
+      ret = 1;
       break;
+    }
 
     p_node = (struct GtStrgraphTraverseNode *) gt_queue_get(to_visit);
     /* mark p_node as visited */
@@ -2823,6 +2826,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
       if (found) {
         /* found more than one path */
         found = false;
+	ret = 2;
         gt_queue_add(done, p_node);
         break;
       }
@@ -2863,6 +2867,7 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
 
   /* found exactly one path*/
   if (found) {
+    ret = 3;
     gt_strgraph_construct_seq_from_path(strgraph,
                                         end_node, contigs, out_string);
   }
@@ -2872,5 +2877,5 @@ bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
   gt_queue_delete(to_visit);
   gt_queue_delete(done);
 
-  return found;
+  return ret;
 }

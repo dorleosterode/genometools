@@ -160,13 +160,13 @@ void gt_strgraph_delete(GtStrgraph *strgraph);
 
 /* --- traversal function for scaffolding --- */
 
-bool gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
-                                  GtEncseq *contigs,
-                                  GtUword readnum_i,
-                                  GtUword readnum_j,
-                                  GtWord max_dist,
-                                  bool start_dir_sense,
-                                  GtStr *out_string);
+GtUword gt_strgraph_traverse_from_to(GtStrgraph *strgraph,
+                                     GtEncseq *contigs,
+                                     GtUword readnum_i,
+                                     GtUword readnum_j,
+                                     GtWord max_dist,
+                                     bool start_dir_sense,
+                                     GtStr *out_string);
 
 /* --- unit test --- */
 

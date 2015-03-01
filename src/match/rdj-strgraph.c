@@ -2731,20 +2731,10 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
     end_node = p_node;
   }
 
-  /* construct sequence for walk here */
-  /* spell the first vertex completely */
-  seqnum = GT_STRGRAPH_V_MIRROR_SEQNUM(GT_STRGRAPH_NOFVERTICES(strgraph),
-                                       end_node->self);
-
-  pos = gt_encseq_seqstartpos(contigs, seqnum);
-  nof_chars = gt_encseq_seqlength(contigs, seqnum);
   GT_INITARRAY(&seq, char);
-  for (l = 0; l < nof_chars; l++, pos++) {
-    char *c;
-    GT_GETNEXTFREEINARRAY(c, &seq, char, inc);
-    *c = gt_encseq_get_decoded_char(contigs, pos,
-                                    GT_READMODE_FORWARD);
-  }
+  /* construct sequence for walk here */
+  /* don't spell the first vertex at all. its sequence is already
+     contained in the sequence in gt scaffolder generate fasta */
   for (m = 0; m < gt_array_size(walk); m++) {
     /* add sequences for all edges in walk */
     w = *(struct GtStrgraphTraverseWalk **) gt_array_get(walk,
@@ -2761,7 +2751,7 @@ gt_strgraph_construct_seq_from_path(GtStrgraph *strgraph,
                                       GT_READMODE_FORWARD);
     }
   }
-
+  GT_STOREINARRAY(&seq, char, inc, '\0');
   /* maybe we need to copy the string from spacechar */
   gt_str_set(out_string, seq.spacechar);
 

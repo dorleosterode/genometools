@@ -159,9 +159,12 @@ static GtOptionParser* gt_scaffolder_option_parser_new(void *tool_arguments)
   gt_option_parser_add_option(op, option);
 
   /* - bam max dist */
-  option = gt_option_new_word("bam_max_dist", "maximal distance of contigs",
+  option = gt_option_new_word("bam_max_dist", "maximal distance of contigs\n"
+                              "default: infinite",
                               &arguments->bam_max_dist, GT_WORD_MAX);
+  gt_option_hide_default(option);
   gt_option_parser_add_option(op, option);
+
 
   /* - bam min align */
   option = gt_option_new_uword("bam_min_align", "minimal alignment length",
